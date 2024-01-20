@@ -46,6 +46,55 @@ void MainWindow::generateData()
     }
 }
 
+void MainWindow::countData()
+{
+    // 数据统计
+    QTreeWidgetItem *item; // 节点
+    for (int i = COL_MATH; i <= COL_ENGLISH; i++)
+    {
+        int cnt50 = 0;
+        int cnt60 = 0;
+        int cnt70 = 0;
+        int cnt80 = 0;
+        int cnt90 = 0;
+
+        for (int j = 0; j < dataModel->rowCount(); j++)
+        {
+            qreal val = dataModel->item(j, i)->text().toDouble();
+
+            if (val < 60)
+                cnt50++;
+            else if ((val >= 60) && (val < 70))
+                cnt60++;
+            else if ((val >= 70) && (val < 80))
+                cnt70++;
+            else if ((val >= 80) && (val < 90))
+                cnt80++;
+            else
+                cnt90++;
+        }
+        item=ui->treeWidget->topLevelItem(0); // <60
+        item->setText(i, QString::number(cnt50));
+        item->setTextAlignment(i, Qt::AlignHCenter);
+
+        item=ui->treeWidget->topLevelItem(1); // 60
+        item->setText(i, QString::number(cnt60));
+        item->setTextAlignment(i, Qt::AlignHCenter);
+
+        item=ui->treeWidget->topLevelItem(2); // 70
+        item->setText(i, QString::number(cnt70));
+        item->setTextAlignment(i, Qt::AlignHCenter);
+
+        item=ui->treeWidget->topLevelItem(3); // 80
+        item->setText(i, QString::number(cnt80));
+        item->setTextAlignment(i, Qt::AlignHCenter);
+
+        item=ui->treeWidget->topLevelItem(4); // 90
+        item->setText(i, QString::number(cnt90));
+        item->setTextAlignment(i, Qt::AlignHCenter);
+    }
+}
+
 void MainWindow::removeAllAxis(QChart *chart)
 {
     // 删除一个chart的所有坐标轴
@@ -157,7 +206,7 @@ void MainWindow::drawBarChart(bool isVertical)
     seriesBar->attachAxis(axisStud);
     seriesBar->attachAxis(axisValue);
     seriesLine->attachAxis(axisStud);
-    seriesLine->attachAxes(axisStud);
+    seriesLine->attachAxis(axisStud);
     chart->legend()->setAlignment(Qt::AlignBottom); // 图例显示在下方
 }
 
@@ -245,6 +294,70 @@ void MainWindow::iniPercentBar()
     ui->chartViewPercentBar->setRenderHint(QPainter::Antialiasing);
 }
 
+void MainWindow::drawPercentBar(bool isVertical)
+{
+    QChart *chart = ui->chartViewPercentBar->chart();
+    if (isVertical)
+        chart->setTitle("PercentBar演示");
+    else
+        chart->setTitle("Horizontal PercentBar演示");
+    chart->removeAllSeries(); // 移除所有序列
+    removeAllAxis(chart); // 移除所有坐标轴
+
+    // 创建数据集，从treeWidget获取数据，一行是一个QBarSet
+    QList<QBarSet*> barSetList; // QBarSet对象列表
+    for (int i = 0; i <= 4; i++) // 共5行，5个分数段
+    {
+        QTreeWidgetItem *item = ui->treeWidget->topLevelItem(i);
+        QBarSet *barSet = new QBarSet(item->text(0)); // 分数段文本作为序列名称
+        barSetList.append(barSet);
+        barSet->append(item->text(1).toDouble()); // 数学人数
+        barSet->append(item->text(2).toDouble()); // 语文人数
+        barSet->append(item->text(3).toDouble()); // 英语人数
+    }
+
+    // 创建序列
+    QAbstractBarSeries *seriesBar;
+    if (isVertical)
+        seriesBar = new QPercentBarSeries();
+    else
+        seriesBar = new QHorizontalPercentBarSeries();
+    seriesBar->append(barSetList); // 直接添加QBarSet对象列表
+    seriesBar->setLabelsVisible(true); // 显示标签
+    connect(seriesBar, &QBarSeries::hovered, this, &MainWindow::do_barHovered);
+    connect(seriesBar, &QBarSeries::clicked, this, &MainWindow::do_barClicked);
+    chart->addSeries(seriesBar);
+
+    // 创建QBarCategoryAxis坐标轴
+    QBarCategoryAxis *axisSection = new QBarCategoryAxis();
+    QStringList categories;
+    categories << "数学" << "语文" << "英语";
+    axisSection->append(categories);
+    axisSection->setRange(categories.at(0), categories.at(categories.count() - 1));
+
+    // 创建QValueAxis坐标轴
+    QValueAxis *axisValue = new QValueAxis();
+    axisValue->setRange(0, 100);
+    axisValue->setTitleText("累积百分比");
+    axisValue->setTickCount(6);
+    axisValue->setLabelFormat("%.0f%%"); // 标签格式
+
+    // 为图表和序列设置坐标轴
+    if (isVertical)
+    {
+        chart->addAxis(axisSection, Qt::AlignBottom);
+        chart->addAxis(axisValue, Qt::AlignLeft);
+    }
+    else
+    {
+        chart->addAxis(axisSection, Qt::AlignLeft);
+        chart->addAxis(axisValue, Qt::AlignBottom);
+    }
+    seriesBar->attachAxis(axisSection);
+    seriesBar->attachAxis(axisValue);
+    chart->legend()->setAlignment(Qt::AlignRight);
+}
+
 void MainWindow::iniPieChart()
 {
     // 饼图初始化
@@ -253,6 +366,36 @@ void MainWindow::iniPieChart()
     chart->setAnimationOptions(QChart::SeriesAnimations);
     ui->chartViewPie->setChart(chart);
     ui->chartViewPie->setRenderHint(QPainter::Antialiasing);
+}
+
+void MainWindow::drawPieChart()
+{
+    QChart *chart = ui->chartViewPie->chart();
+    chart->removeAllSeries(); // 移除所有序列
+
+    int colNo = 1 + ui->comboCourse->currentIndex(); // 获取分析对象，数学、英语、语文
+    QPieSeries *seriesPie = new QPieSeries(); // 创建饼图序列
+    seriesPie->setHoleSize(ui->spinHoleSize->value()); // 饼图中心空心圆的大小
+    for (int i = 0; i <= 4; i++) // 添加分块数据，5个分数段
+    {
+        QTreeWidgetItem *item = ui->treeWidget->topLevelItem(i);
+        seriesPie->append(item->text(0), item->text(colNo).toDouble()); // 标签，数值
+    }
+    // 为每个分块设置显示标签
+    QPieSlice *slice; // 饼图分块
+    for (int i = 0; i <= 4; i++) // 设置每个分块的标签文字
+    {
+        slice = seriesPie->slices().at(i); // 获取分块
+        slice->setLabel(slice->label() + QString::asprintf("：%.0f人，%.1f%%", slice->value(), slice->percentage() * 100));
+    }
+    slice->setExploded(true); // 最后一个设置为exploded
+    chart->setAcceptHoverEvents(true);
+    connect(seriesPie, &QPieSeries::hovered, this, &MainWindow::do_pieHovered);
+
+    seriesPie->setLabelsVisible(true); // 只影响已创建的分块，必须在添加完分块之后设置
+    chart->addSeries(seriesPie); // 添加饼图序列
+    chart->setTitle("Piechart----" + ui->comboCourse->currentText());
+    chart->legend()->setAlignment(Qt::AlignRight);
 }
 
 MainWindow::MainWindow(QWidget *parent)
@@ -315,6 +458,12 @@ void MainWindow::do_barClicked(int index, QBarSet *barset)
     ui->statusBar->showMessage(str);
 }
 
+void MainWindow::do_pieHovered(QPieSlice *slice, bool state)
+{
+    // 自定义槽函数，与饼图序列的hovered()信号关联
+    slice->setExploded(state);
+}
+
 void MainWindow::on_btnBuildBarChart_clicked()
 {
     drawBarChart(true); // 绘制柱状图
@@ -336,5 +485,57 @@ void MainWindow::on_btnBuildStackedBar_clicked()
 void MainWindow::on_btnBuildStackedBarH_clicked()
 {
     drawStackedBar(false); // 绘制水平堆叠柱状图
+}
+
+
+void MainWindow::on_btnPercentBar_clicked()
+{
+    drawPercentBar(true); // 绘制百分比柱状图
+}
+
+
+void MainWindow::on_btnPercentBarH_clicked()
+{
+    drawPercentBar(false); // 绘制水平百分比柱状图
+}
+
+
+void MainWindow::on_comboCourse_currentIndexChanged(int index)
+{
+    // “分析数据”下拉列表框
+    Q_UNUSED(index);
+    drawPieChart();
+}
+
+
+void MainWindow::on_btnDrawPieChart_clicked()
+{
+    // “绘制饼图”按钮
+    drawPieChart();
+}
+
+
+void MainWindow::on_spinHoleSize_valueChanged(double arg1)
+{
+    // 设置holeSize的SpinBox
+    QPieSeries *series;
+    series = static_cast<QPieSeries*>(ui->chartViewPie->chart()->series().at(0));
+    series->setHoleSize(arg1);
+}
+
+
+void MainWindow::on_spinPieSize_valueChanged(double arg1)
+{
+    // 设置pieSize的SpinBox
+    QPieSeries *series;
+    series = static_cast<QPieSeries*>(ui->chartViewPie->chart()->series().at(0));
+    series->setPieSize(arg1);
+}
+
+
+void MainWindow::on_chkBox_PieLegend_clicked(bool checked)
+{
+    // 显示图例CheckBox
+    ui->chartViewPie->chart()->legend()->setVisible(checked);
 }
 

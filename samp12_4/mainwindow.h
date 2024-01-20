@@ -1,6 +1,7 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
+#include <QtCharts>
 #include <QMainWindow>
 #include <QStandardItemModel>
 
@@ -49,6 +50,20 @@ private slots:
     void on_btnBuildStackedBar_clicked();
 
     void on_btnBuildStackedBarH_clicked();
+
+    void on_btnPercentBar_clicked();
+
+    void on_btnPercentBarH_clicked();
+
+    void on_comboCourse_currentIndexChanged(int index);
+
+    void on_btnDrawPieChart_clicked();
+
+    void on_spinHoleSize_valueChanged(double arg1);
+
+    void on_spinPieSize_valueChanged(double arg1);
+
+    void on_chkBox_PieLegend_clicked(bool checked);
 
 private:
     Ui::MainWindow *ui;
