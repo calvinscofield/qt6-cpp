@@ -50,7 +50,6 @@ void TValueThread::run()
 
 TPictureThread::TPictureThread(QObject *parent) : QThread(parent)
 {
-
 }
 
 void TPictureThread::run()
@@ -64,3 +63,4 @@ void TPictureThread::run()
         rwLocker.unlock(); // 解锁
     }
 }
+

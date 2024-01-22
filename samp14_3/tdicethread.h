@@ -42,5 +42,4 @@ signals:
 protected:
     void run();
 };
-
 #endif // TDICETHREAD_H

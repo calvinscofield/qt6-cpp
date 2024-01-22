@@ -12,7 +12,9 @@ MainWindow::MainWindow(QWidget *parent)
     connect(threadA, &TDiceThread::started, this, &MainWindow::do_threadA_started);
     connect(threadA, &TDiceThread::finished, this, &MainWindow::do_threadA_finished);
     connect(threadValue, &TValueThread::newValue, this, &MainWindow::do_newValue);
-    // calvin注释：QT6.5.3运行是图片不更新，调式发现此处的槽函数do_newPicture不触发，和参数的引用有关，尝试把newPicture(QString &picName)和do_newPicture(QString &picName)参数里的&去掉可以正常触发。
+    /* calvin注释：用QT6.5.3运行时图片不显示，调式发现槽函数do_newPicture(QString &picName)不触发。和参数的引用有关，尝试把信号newPicture(QString &picName)和槽do_newPicture(QString &picName)参数里的&去掉可以正常触发。
+     * 解决方法是添加如下代码：qRegisterMetaType<const QString&>("QString&");*/
+    qRegisterMetaType<const QString&>("QString&");
     connect(threadPic, &TPictureThread::newPicture, this, &MainWindow::do_newPicture);
 }
 
